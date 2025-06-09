@@ -1,0 +1,21 @@
+<!--nav>
+  <div class="logo">
+    <img src="{{ url_for('static', filename='images/web_icon.jpeg') }}" alt="Logo">
+    <span>Forecast App</span>
+  </div>
+  <ul class="nav-links">
+    <li><a href="{{ url_for('about') }}">About</a></li>
+    <li><a href="{{ url_for('predict_page') }}">Predict</a></li>
+  </ul>
+</nav-->
+
+<nav>
+  <div class="nav-left">
+    <img src="{{ url_for('static', filename='images/web_icon.jpeg') }}" alt="Logo" class="logo">
+    <span class="brand">My Forecast App</span>
+    <ul class="nav-menu">
+    <li><a href="/about">About</a></li>
+    <li><a href="/predict">Predict</a></li>
+  </ul>
+  </div>
+</nav>
