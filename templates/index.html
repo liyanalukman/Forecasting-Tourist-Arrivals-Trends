@@ -10,83 +10,113 @@
   {% include 'navbar.html' %}
 
   <div class="content">
-  <h1>Predict Arrivals</h1>
-  <label for="monthSelect" style="font-size: 16px;">Select a month to predict:</label>
-  <select id="monthSelect"></select>
+    <h1>Predict Arrivals</h1>
+    <label for="monthSelect" style="font-size: 16px;">Select a month to predict:</label>
+    <select id="monthSelect"></select>
 
-  <br>
-  <button onclick="getPrediction()" style="display: block; margin-top: 20px;">Get Prediction</button>
+    <br>
+    <button onclick="getPrediction()" style="display: block; margin-top: 20px;">Get Prediction</button>
 
-  <div id="result" style="margin-top:20px;"></div>
-  <canvas id="countryChart" width="400" height="300" style="margin-top: 30px;"></canvas>
+    <div id="result" style="margin-top:20px;"></div>
 
-  <script>
-    const monthSelect = document.getElementById('monthSelect');
-    const resultDiv = document.getElementById('result');
-    const ctx = document.getElementById('countryChart').getContext('2d');
-    let countryChart = null;
+    <canvas id="countryChart" width="400" height="300" style="margin-top: 30px;"></canvas>
+    <canvas id="stateChart" width="400" height="300" style="margin-top: 30px;"></canvas>
 
-    // Get list of months from backend
-    fetch('/months')
-      .then(response => response.json())
-      .then(dates => {
-        dates.forEach(month => {
-          const option = document.createElement('option');
-          option.value = month;
-          option.textContent = month;
-          monthSelect.appendChild(option);
+    <script>
+      const monthSelect = document.getElementById('monthSelect');
+      const resultDiv = document.getElementById('result');
+      const countryCtx = document.getElementById('countryChart').getContext('2d');
+      const stateCtx = document.getElementById('stateChart').getContext('2d');
+
+      let countryChart = null;
+      let stateChart = null;
+
+      // Get list of months from backend
+      fetch('/months')
+        .then(response => response.json())
+        .then(dates => {
+          dates.forEach(month => {
+            const option = document.createElement('option');
+            option.value = month;
+            option.textContent = month;
+            monthSelect.appendChild(option);
+          });
         });
-      });
 
-    function getPrediction() {
-      const selectedMonth = monthSelect.value;
-      fetch('/predict', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ selected_month: selectedMonth })
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.error) {
-          resultDiv.innerHTML = `<p style="color:red;">${data.error}</p>`;
-          if (countryChart) {
-          countryChart.destroy();
-        }
-        } else {
-          resultDiv.innerHTML = `<h2>${data.month}</h2><p>Predicted Arrivals: <strong>${data.prediction}</strong></p>`;
+      function getPrediction() {
+        const selectedMonth = monthSelect.value;
+        fetch('/predict', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ selected_month: selectedMonth })
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) {
+            resultDiv.innerHTML = `<p style="color:red;">${data.error}</p>`;
+            if (countryChart) countryChart.destroy();
+            if (stateChart) stateChart.destroy();
+          } else {
+            resultDiv.innerHTML = `
+              <h2>${data.month}</h2>
+              <p>Predicted Arrivals: <strong>${data.prediction}</strong></p>
+            `;
 
-          const labels = data.top_countries.map(item => item[0]);
-        const counts = data.top_countries.map(item => item[1]);
+            // --- Country Chart ---
+            const countryLabels = data.top_countries.map(item => item[0]);
+            const countryCounts = data.top_countries.map(item => item[1]);
 
-        if (countryChart) {
-          countryChart.destroy(); // Remove previous chart
-        }
-
-         countryChart = new Chart(ctx, {
-          type: 'bar',
-          data: {
-            labels: labels,
-            datasets: [{
-              label: 'Predicted Arrivals',
-              data: counts,
-              backgroundColor: 'rgba(54, 162, 235, 0.7)',
-              borderColor: 'rgba(54, 162, 235, 1)',
-              borderWidth: 1
-            }]
-          },
-          options: {
-            scales: {
-              y: {
-                beginAtZero: true
+            if (countryChart) countryChart.destroy();
+            countryChart = new Chart(countryCtx, {
+              type: 'bar',
+              data: {
+                labels: countryLabels,
+                datasets: [{
+                  label: 'Top 5 Countries',
+                  data: countryCounts,
+                  backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                  borderColor: 'rgba(54, 162, 235, 1)',
+                  borderWidth: 1
+                }]
+              },
+              options: {
+                scales: {
+                  y: {
+                    beginAtZero: true
+                  }
+                }
               }
-            }
+            });
+
+            // --- State Chart ---
+            const stateLabels = data.top_states.map(item => item[0]);
+            const stateCounts = data.top_states.map(item => item[1]);
+
+            if (stateChart) stateChart.destroy();
+            stateChart = new Chart(stateCtx, {
+              type: 'bar',
+              data: {
+                labels: stateLabels,
+                datasets: [{
+                  label: 'Top 5 States',
+                  data: stateCounts,
+                  backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                  borderColor: 'rgba(255, 99, 132, 1)',
+                  borderWidth: 1
+                }]
+              },
+              options: {
+                scales: {
+                  y: {
+                    beginAtZero: true
+                  }
+                }
+              }
+            });
           }
         });
-        
-        }
-      });
-    }
-  </script>
+      }
+    </script>
   </div>
 </body>
 </html>
