@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>My Forecast App</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <style>
     html, body {
@@ -86,7 +87,7 @@
 
   {% include 'navbar.html' %}
 
-<section class="section hero fade-section" style="background: url('{{ url_for('static', filename='images/kl_bg.jpg') }}') center center / cover no-repeat;">
+<section class="section hero fade-section" style="background-image: url('{{ url_for('static', filename='images/kl_bg.jpg') }}'); background-position: center center; background-size: cover; background-repeat: no-repeat;">
     <div class="overlay">
       <h1>Discover Travel Trends Before They Happen</h1>
       <p>Powered by data. Built for curious minds.</p>
@@ -100,17 +101,66 @@
   </div>  
   </section>
 
+  <section class="section about-section fade-section">
+  <div class="content">
+    <h2>Expected Arrivals This Month</h2>
+<h1 style="font-size: 48px; color: #007bff;">{{ "{:,}".format(predicted_total) }}</h1>
+
+    <h3>Arrivals by State</h3>
+    <canvas id="myChart"></canvas>
+<script>
+  const ctx = document.getElementById('myChart').getContext('2d');
+  const myChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: {{ state_arrivals | map(attribute=0) | list | tojson }},
+      datasets: [{
+        label: 'Number of Arrivals',
+        data: {{ state_arrivals | map(attribute=1) | list | tojson }},
+        backgroundColor: 'rgba(54, 162, 235, 0.6)'
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      }
+    }
+  });
+</script>
+  </div>
+</section>
+
+
   <section class="section cta-section fade-section">
         <div class="content">
     <h2>Explore Our Prediction Models</h2>
     <div class="cta-buttons">
       <a href="{{ url_for('monthly_predict_page') }}">Monthly Overview</a>
-      <a href="{{ url_for('state_predict_page') }}">State Prediction</a>
+      <a href="{{ url_for('state_predict_page') }}">State Level Prediction</a>
+      <a href="{{ url_for('country_predict_page') }}">International Level Prediction</a>
+
     </div>
     </div>
   </section>
 
   <script>
+    
+   fetch('/api/sneak_peek')
+    .then(response => response.json())
+    .then(data => {
+      const tbody = document.querySelector('#sneakPeekTable tbody');
+      data.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${item.month}</td>
+          <td>${Math.round(item.yhat).toLocaleString()}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    });
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {

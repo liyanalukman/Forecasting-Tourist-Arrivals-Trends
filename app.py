@@ -62,7 +62,25 @@ def home():
 
 @app.route('/about')
 def about():
-    return render_template('about.html')
+    # Predict next month's total arrivals
+    next_month_forecast = model.forecast(steps=1)
+    predicted_total = int(max(next_month_forecast[0], 0))  # Ensure it's non-negative
+
+    # Get latest month's state data
+    base_str = last_data_date.strftime('%b %Y')
+    state_props = state_proportion_by_month.get(base_str, {})
+    state_totals = {state: int(predicted_total * prop) for state, prop in state_props.items()}
+    
+    # Sort by arrivals descending
+    sorted_states = sorted(state_totals.items(), key=lambda x: x[1], reverse=True)
+
+    # Send data to template
+    return render_template(
+        'about.html',
+        predicted_total=predicted_total,
+        state_arrivals=sorted_states
+    )
+
 
 @app.route('/predict/monthly')
 def monthly_predict_page():
@@ -143,10 +161,18 @@ def predict_state_trend():
     forecast = model.forecast(steps=12)
     forecast = np.maximum(forecast, 0)
 
-    base_month = last_data_date.strftime('%b %Y')
-    state_props = state_proportion_by_month.get(base_month, {})
-    state_prop = state_props.get(selected_state, 0)
+        # Get total arrivals for each state
+    state_totals = df.groupby('soe')['arrivals'].sum()
+    total_arrivals = state_totals.sum()
 
+    average_state_props = (state_totals / total_arrivals).to_dict()
+
+    # Get selected state proportion
+    state_prop = average_state_props.get(selected_state, 0)
+
+    # Forecast future arrivals
+    forecast = model.forecast(steps=12)
+    forecast = np.maximum(forecast, 0)
     state_forecast = [int(total * state_prop) for total in forecast]
 
     return jsonify({
@@ -163,19 +189,21 @@ def predict_country_trend():
     forecast = model.forecast(steps=12)
     forecast = np.maximum(forecast, 0)
 
-    base_month = last_data_date.strftime('%b %Y')
+    country_totals = df.groupby('country')['arrivals'].sum()
+    total_arrivals = country_totals.sum()
+    average_props = (country_totals / total_arrivals).to_dict()
 
+    # Match country name to code
     country_code = None
-    for code in proportion_by_month.get(base_month, {}):
-        if country_code_to_name.get(code) == selected_country:
+    for code, name in country_code_to_name.items():
+        if name == selected_country:
             country_code = code
             break
 
     if not country_code:
         return jsonify({'error': 'Country not found'})
 
-    country_props = proportion_by_month.get(base_month, {})
-    country_prop = country_props.get(country_code, 0)
+    country_prop = average_props.get(country_code, 0)
 
     country_forecast = [int(total * country_prop) for total in forecast]
 
@@ -183,6 +211,8 @@ def predict_country_trend():
         'months': months,
         'arrivals': country_forecast
     })
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
