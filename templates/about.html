@@ -2,16 +2,131 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Monthly Arrival Predictions</title>
+  <title>My Forecast App</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      scroll-behavior: smooth;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #e6f2fb; /* baby blue */
+    }
+
+    .section {
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      text-align: center;
+      padding: 20px;
+      opacity: 0;
+      transform: translateY(40px);
+      transition: opacity 2.0s ease, transform 2.0s ease;
+    }
+
+    .section.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .hero h1 {
+      font-size: 4em;
+      color: #005b99;
+      margin: 0;
+    }
+
+    .hero p {
+      font-size: 1.5em;
+      color: #333;
+      margin-top: 10px;
+    }
+
+    .about-section h2 {
+      font-size: 2.5em;
+      color: #005b99;
+      margin-bottom: 10px;
+    }
+
+    .about-section p {
+      font-size: 1.2em;
+      max-width: 700px;
+      color: #444;
+    }
+
+    .cta-section h2 {
+      font-size: 2em;
+      color: #005b99;
+    }
+
+    .cta-buttons {
+      margin-top: 20px;
+    }
+
+    .cta-buttons a {
+      display: inline-block;
+      margin: 10px;
+      padding: 12px 24px;
+      background-color: #005b99;
+      color: white;
+      text-decoration: none;
+      font-size: 18px;
+      font-family: 'Lucida Sans';
+      border-radius: 10px;
+      transition: background-color 0.3s ease;
+    }
+
+    .cta-buttons a:hover {
+      background-color: #004080;
+    }
+  </style>
 </head>
 <body>
-    {% include 'navbar.html' %}
 
+  {% include 'navbar.html' %}
+
+<section class="section hero fade-section" style="background: url('{{ url_for('static', filename='images/kl_bg.jpg') }}') center center / cover no-repeat;">
+    <div class="overlay">
+      <h1>Discover Travel Trends Before They Happen</h1>
+      <p>Powered by data. Built for curious minds.</p>
+    </div>
+  </section>
+
+  <section class="section about-section fade-section">
     <div class="content">
-    <h1>Welcome to the Forecast App</h1>
-    <p>This app predicts monthly arrivals using a SARIMA model.</p>
-  </div>
+    <h2>About This Project</h2>
+    <p>This forecasting web app was developed as part of our academic project to analyze and visualize future trends in international and domestic tourism. Using machine learning and real-world data, we aim to make predictions accessible and insightful.</p>
+  </div>  
+  </section>
+
+  <section class="section cta-section fade-section">
+        <div class="content">
+    <h2>Explore Our Prediction Models</h2>
+    <div class="cta-buttons">
+      <a href="{{ url_for('monthly_predict_page') }}">Monthly Overview</a>
+      <a href="{{ url_for('state_predict_page') }}">State Prediction</a>
+    </div>
+    </div>
+  </section>
+
+  <script>
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        } else {
+          entry.target.classList.remove('visible'); // optional if you want it to fade out again
+        }
+      });
+    }, {
+      threshold: 0.2
+    });
+
+    document.querySelectorAll('.fade-section').forEach(section => {
+      observer.observe(section);
+    });
+  </script>
+
 </body>
 </html>
-

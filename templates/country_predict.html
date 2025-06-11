@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>International Arrivals Prediction</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  {% include 'navbar.html' %}
+
+  <div class="content">
+    <h1>Forecast by Country</h1>
+    <p>Select a country to view the forecasted arrivals to Malaysia.</p>
+    <label for="countrySelect">Choose Country:</label>
+    <select id="countrySelect" class="styled-select">
+            <option value="">-- Select a country --</option>
+    </select>
+    <button onclick="fetchForecast()" class="styled-button">Get Prediction</button>
+
+    <div id="result"></div>
+    <canvas id="countryChart"></canvas>
+  </div>
+
+  <script>
+    let chartInstance = null;
+
+    // Load country list on page load
+    fetch('/countries')
+      .then(response => response.json())
+      .then(data => {
+        const select = document.getElementById('countrySelect');
+        data.forEach(country => {
+          const option = document.createElement('option');
+          option.value = country;
+          option.textContent = country;
+          select.appendChild(option);
+        });
+      });
+
+    function fetchForecast() {
+      const selectedCountry = document.getElementById('countrySelect').value;
+      fetch('/predict/country_trend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ country: selectedCountry })
+      })
+      .then(response => response.json())
+      .then(data => {
+        const ctx = document.getElementById('countryChart').getContext('2d');
+
+        // Destroy old chart if exists
+        if (chartInstance) chartInstance.destroy();
+
+        chartInstance = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: data.months,
+            datasets: [{
+              label: 'Forecasted Arrivals',
+              data: data.arrivals,
+              borderColor: 'rgb(255, 99, 132)',
+              backgroundColor: 'rgba(255, 99, 132, 0.2)',
+              fill: true,
+              tension: 0.3,
+              pointRadius: 4,
+              borderWidth: 2
+            }]
+          },
+          options: {
+            responsive: true,
+            scales: {
+              y: {
+                beginAtZero: true,
+                title: { display: true, text: 'Arrivals' }
+              },
+              x: {
+                title: { display: true, text: 'Month' }
+              }
+            },
+            plugins: {
+              title: {
+                display: true,
+                text: `12-Month Forecast: ${selectedCountry}`
+              },
+              legend: { display: false }
+            }
+          }
+        });
+      })
+      .catch(error => {
+        console.error('Error fetching country forecast:', error);
+      });
+    }
+  </script>
+</body>
+</html>

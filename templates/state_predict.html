@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>State Level Prediction</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  {% include 'navbar.html' %}
+
+  <div class="content">
+    <h1>Predict Arrival Trends by State</h1>
+    <label for="stateSelect">Select a state to predict:</label>
+    <select id="stateSelect" class="styled-select">
+      <option value="">-- Select a state --</option>
+    </select>
+    <button onclick="getPrediction()" class="styled-button">Get Prediction</button>
+
+    <div id="result"></div>
+    <canvas id="stateChart" width="400" height="200" style="margin-top: 30px;"></canvas>
+  </div>
+
+  <script>
+    const stateSelect = document.getElementById('stateSelect');
+    const resultDiv = document.getElementById('result');
+    const ctx = document.getElementById('stateChart').getContext('2d');
+    let stateChart = null;
+
+    // Load state options
+    fetch('/states')
+      .then(res => res.json())
+      .then(states => {
+        states.forEach(state => {
+          const opt = document.createElement('option');
+          opt.value = state;
+          opt.textContent = state;
+          stateSelect.appendChild(opt);
+        });
+      });
+
+    function getPrediction() {
+      const selectedState = stateSelect.value;
+      if (!selectedState) {
+        resultDiv.innerHTML = `<p style="color: red;">Please select a state.</p>`;
+        return;
+      }
+
+      fetch('/predict/state_trend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: selectedState })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          resultDiv.innerHTML = `<p style="color:red;">${data.error}</p>`;
+          if (stateChart) stateChart.destroy();
+        } else {
+          resultDiv.innerHTML = `
+            <h2>${selectedState}</h2>
+            <p>Showing estimated monthly arrivals for the selected state.</p>
+          `;
+
+          const labels = data.months;
+          const arrivals = data.arrivals;
+
+          if (stateChart) stateChart.destroy();
+
+          stateChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: labels,
+              datasets: [{
+                label: `Tourist Arrivals for ${selectedState}`,
+                data: arrivals,
+                borderColor: '#005b99',
+                backgroundColor: 'rgba(0, 91, 153, 0.1)',
+                borderWidth: 2,
+                tension: 0.3
+              }]
+            },
+            options: {
+              responsive: true,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: {
+                    display: true,
+                    text: 'Estimated Arrivals'
+                  }
+                },
+                x: {
+                  title: {
+                    display: true,
+                    text: 'Month'
+                  }
+                }
+              }
+            }
+          });
+        }
+      });
+    }
+  </script>
+</body>
+</html>
