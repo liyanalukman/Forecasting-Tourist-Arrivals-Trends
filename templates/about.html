@@ -104,32 +104,24 @@
   <section class="section about-section fade-section">
   <div class="content">
     <h2>Expected Arrivals This Month</h2>
-<h1 style="font-size: 48px; color: #007bff;">{{ "{:,}".format(predicted_total) }}</h1>
+    <h1 style="font-size: 48px; color: #007bff;">{{ "{:,}".format(predicted_total) }}</h1>
 
     <h3>Arrivals by State</h3>
     <canvas id="myChart"></canvas>
-<script>
-  const ctx = document.getElementById('myChart').getContext('2d');
-  const myChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: {{ state_arrivals | map(attribute=0) | list | tojson }},
-      datasets: [{
-        label: 'Number of Arrivals',
-        data: {{ state_arrivals | map(attribute=1) | list | tojson }},
-        backgroundColor: 'rgba(54, 162, 235, 0.6)'
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: {
-        y: {
-          beginAtZero: true
-        }
-      }
-    }
-  });
-</script>
+
+    <h3>Upcoming Predictions</h3>
+    <div class="table-responsive">
+      <table id="sneakPeekTable" class="table">
+        <thead>
+          <tr>
+            <th>Month</th>
+            <th>Predicted Arrivals</th>
+          </tr>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
+    </div>
   </div>
 </section>
 
@@ -141,32 +133,68 @@
       <a href="{{ url_for('monthly_predict_page') }}">Monthly Overview</a>
       <a href="{{ url_for('state_predict_page') }}">State Level Prediction</a>
       <a href="{{ url_for('country_predict_page') }}">International Level Prediction</a>
-
+      <a href="{{ url_for('interactive_viz') }}">Interactive Visualizations</a>
     </div>
     </div>
   </section>
 
   <script>
-    
-   fetch('/api/sneak_peek')
-    .then(response => response.json())
-    .then(data => {
-      const tbody = document.querySelector('#sneakPeekTable tbody');
-      data.forEach(item => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${item.month}</td>
-          <td>${Math.round(item.yhat).toLocaleString()}</td>
-        `;
-        tbody.appendChild(tr);
-      });
+    // State arrivals chart
+    const ctx = document.getElementById('myChart').getContext('2d');
+    const myChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: {{ state_arrivals | map(attribute=0) | list | tojson }},
+        datasets: [{
+          label: 'Number of Arrivals',
+          data: {{ state_arrivals | map(attribute=1) | list | tojson }},
+          backgroundColor: 'rgba(54, 162, 235, 0.6)'
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        }
+      }
     });
+
+    // Sneak peek predictions
+    fetch('/api/sneak_peek')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        const tbody = document.querySelector('#sneakPeekTable tbody');
+        if (Array.isArray(data)) {
+          data.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td>${item.month}</td>
+              <td>${Math.round(item.yhat).toLocaleString()}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        } else {
+          console.error('Expected array but got:', data);
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching sneak peek data:', error);
+        const tbody = document.querySelector('#sneakPeekTable tbody');
+        tbody.innerHTML = '<tr><td colspan="2">Error loading predictions</td></tr>';
+      });
+
+    // Fade in sections
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           entry.target.classList.add('visible');
-        } else {
-          entry.target.classList.remove('visible'); // optional if you want it to fade out again
         }
       });
     }, {

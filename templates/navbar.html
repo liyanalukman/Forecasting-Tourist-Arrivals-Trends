@@ -1,18 +1,147 @@
-<nav class="navbar">
-  <div class="navbar-left">
-    <img src="{{ url_for('static', filename='images/web_icon.jpeg') }}" alt="Logo" class="logo">
-    <span class="brand">My Forecast App</span>
-
-    <ul class="navbar-menu">
-      <li><a href="/about">About</a></li>
-      <li class="dropdown">
-        <a href="#" class="dropbtn">Predict </a>
-        <ul class="dropdown-menu">
-          <li><a href="{{ url_for('monthly_predict_page') }}">Monthly Overview</a></li>
-          <li><a href="{{ url_for('state_predict_page') }}">State Level Arrivals Prediction</a></li>
-          <li><a href="{{ url_for('country_predict_page') }}">International Arrivals Prediction</a></li>
-        </ul>
-      </li>
-    </ul>
-  </div>
+<!-- Navigation Bar -->
+<nav class="navbar-fixed">
+    <div class="navbar">
+        <div class="navbar-left">
+            <img src="{{ url_for('static', filename='images/web_icon.jpeg') }}" alt="Logo" class="logo">
+            <span class="brand">Tourist Arrivals</span>
+            <ul class="navbar-menu">
+                <li><a href="{{ url_for('home') }}" {% if request.endpoint == 'home' %}class="active"{% endif %}>Home</a></li>
+                <li class="dropdown">
+                    <a href="#" class="dropbtn" tabindex="0">Predict</a>
+                    <ul class="dropdown-menu">
+                        <li><a href="{{ url_for('monthly_predict_page') }}" {% if request.endpoint == 'monthly_predict_page' %}class="active"{% endif %}>Monthly Overview</a></li>
+                        <li><a href="{{ url_for('state_predict_page') }}" {% if request.endpoint == 'state_predict_page' %}class="active"{% endif %}>State Level Arrivals Prediction</a></li>
+                        <li><a href="{{ url_for('country_predict_page') }}" {% if request.endpoint == 'country_predict_page' %}class="active"{% endif %}>International Arrivals Prediction</a></li>
+                    </ul>
+                </li>
+                <li><a href="{{ url_for('analytics') }}" {% if request.endpoint == 'analytics' %}class="active"{% endif %}>Analytics Dashboard</a></li>
+                <li><a href="{{ url_for('interactive_viz') }}" {% if request.endpoint == 'interactive_viz' %}class="active"{% endif %}>Interactive Visualizations</a></li>
+            </ul>
+        </div>
+    </div>
 </nav>
+
+<style>
+.navbar-fixed {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+.navbar {
+    background: #fff;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+.navbar-left {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+.logo {
+    height: 36px;
+    width: 36px;
+    margin-right: 12px;
+}
+.brand {
+    color: #222;
+    font-size: 1.6rem;
+    font-weight: 600;
+    margin-right: 36px;
+    letter-spacing: 1px;
+}
+.navbar-menu {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    height: 56px;
+}
+.navbar-menu li {
+    position: relative;
+    height: 56px;
+    display: flex;
+    align-items: center;
+}
+.navbar-menu a {
+    color: #222 !important;
+    text-decoration: none;
+    font-size: 1.08rem;
+    font-weight: 500;
+    padding: 0 18px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    border-bottom: 3px solid transparent;
+    background: #fff;
+    transition: border-bottom 0.2s, color 0.2s;
+}
+.navbar-menu a:hover,
+.navbar-menu a:focus {
+    color: #1565c0 !important;
+    background: #f5f5f5;
+    outline: none;
+    border-bottom: 3px solid #90caf9;
+}
+.navbar-menu a.active {
+    border-bottom: 3px solid #1565c0;
+    background: #f5f5f5;
+    color: #1565c0 !important;
+}
+.dropdown .dropbtn::after {
+    content: '\25BC';
+    font-size: 0.7em;
+    margin-left: 6px;
+    opacity: 0.7;
+}
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 60px;
+    left: 0;
+    background: #fff;
+    min-width: 220px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.13);
+    border-radius: 0 0 8px 8px;
+    padding: 8px 0;
+    z-index: 200;
+}
+.dropdown:hover .dropdown-menu,
+.dropdown:focus-within .dropdown-menu {
+    display: block;
+}
+.dropdown-menu li {
+    height: auto;
+}
+.dropdown-menu a {
+    color: #222 !important;
+    background: none;
+    font-size: 1rem;
+    font-weight: 400;
+    padding: 10px 22px;
+    border: none;
+    border-radius: 0;
+    height: auto;
+    border-bottom: none;
+    transition: background 0.18s, color 0.18s;
+}
+.dropdown-menu a:hover,
+.dropdown-menu a:focus {
+    background: #f5f5f5;
+    color: #1565c0 !important;
+}
+.dropdown-menu a.active {
+    background: #e3f2fd;
+    color: #1565c0 !important;
+}
+@media (max-width: 900px) {
+    .navbar-left { max-width: 100%; }
+    .brand { font-size: 1.2rem; margin-right: 18px; }
+    .navbar-menu a { padding: 0 10px; font-size: 1rem; }
+    .dropdown-menu { min-width: 160px; }
+}
+</style>

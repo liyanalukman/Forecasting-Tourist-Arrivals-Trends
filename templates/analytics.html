@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tourist Arrivals Analytics</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.plot.ly/plotly-2.27.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+            padding: 20px 0;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 25px;
+            transition: transform 0.2s ease-in-out;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        .chart-container {
+            flex: 1;
+            min-height: 400px;
+            width: 100%;
+            margin-top: 15px;
+        }
+
+        .error-message {
+            color: #721c24;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        h1 {
+            text-align: center;
+            margin: 30px 0;
+            color: #2c3e50;
+            font-size: 2.5em;
+            font-weight: 600;
+        }
+
+        h2 {
+            color: #34495e;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            font-weight: 500;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        /* Responsive design */
+        @media (max-width: 1200px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .card {
+                min-height: 500px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .dashboard-grid {
+                gap: 15px;
+                padding: 10px 0;
+            }
+
+            .card {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 2em;
+                margin: 20px 0;
+            }
+
+            h2 {
+                font-size: 1.3em;
+            }
+        }
+    </style>
+</head>
+<body>
+    {% include 'navbar.html' %}
+
+    <div class="container">
+        <h1>Advanced Analytics Dashboard</h1>
+        
+        <div class="dashboard-grid">
+            <!-- Year-over-Year Comparison -->
+            <div class="card">
+                <h2>Year-over-Year Comparison</h2>
+                <div id="yoyChart" class="chart-container"></div>
+            </div>
+
+            <!-- Seasonal Decomposition -->
+            <div class="card">
+                <h2>Seasonal Decomposition</h2>
+                <div id="seasonalChart" class="chart-container"></div>
+            </div>
+
+            <!-- Moving Averages -->
+            <div class="card">
+                <h2>Moving Averages & Trend</h2>
+                <div id="movingAvgChart" class="chart-container"></div>
+            </div>
+
+            <!-- Peak Season Analysis -->
+            <div class="card">
+                <h2>Peak Season Analysis</h2>
+                <div id="peakSeasonChart" class="chart-container"></div>
+            </div>
+
+            <!-- Growth Rate -->
+            <div class="card">
+                <h2>Growth Rate Analysis</h2>
+                <div id="growthRateChart" class="chart-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Function to handle errors
+        function handleError(error, chartId) {
+            console.error(`Error loading ${chartId}:`, error);
+            document.getElementById(chartId).innerHTML = `
+                <div class="error-message">
+                    <p>Error loading chart. Please try refreshing the page.</p>
+                    <p>Error details: ${error.message}</p>
+                </div>
+            `;
+        }
+
+        // Function to load and display charts
+        async function loadCharts() {
+            try {
+                // Year-over-Year Comparison
+                const yoyResponse = await fetch('/api/analytics/yoy');
+                if (!yoyResponse.ok) throw new Error('Failed to load year-over-year data');
+                const yoyData = await yoyResponse.json();
+                Plotly.newPlot('yoyChart', yoyData.data, yoyData.layout);
+
+                // Seasonal Decomposition
+                const seasonalResponse = await fetch('/api/analytics/seasonal');
+                if (!seasonalResponse.ok) throw new Error('Failed to load seasonal data');
+                const seasonalData = await seasonalResponse.json();
+                Plotly.newPlot('seasonalChart', seasonalData.data, seasonalData.layout);
+
+                // Moving Averages
+                const movingAvgResponse = await fetch('/api/analytics/moving-avg');
+                if (!movingAvgResponse.ok) throw new Error('Failed to load moving averages data');
+                const movingAvgData = await movingAvgResponse.json();
+                Plotly.newPlot('movingAvgChart', movingAvgData.data, movingAvgData.layout);
+
+                // Peak Season
+                const peakSeasonResponse = await fetch('/api/analytics/peak-season');
+                if (!peakSeasonResponse.ok) throw new Error('Failed to load peak season data');
+                const peakSeasonData = await peakSeasonResponse.json();
+                Plotly.newPlot('peakSeasonChart', peakSeasonData.data, peakSeasonData.layout);
+
+                // Growth Rate
+                const growthRateResponse = await fetch('/api/analytics/growth-rate');
+                if (!growthRateResponse.ok) throw new Error('Failed to load growth rate data');
+                const growthRateData = await growthRateResponse.json();
+                Plotly.newPlot('growthRateChart', growthRateData.data, growthRateData.layout);
+            } catch (error) {
+                console.error('Error loading charts:', error);
+                document.querySelectorAll('.chart-container').forEach(container => {
+                    container.innerHTML = `
+                        <div class="error-message">
+                            <p>Error loading charts. Please try refreshing the page.</p>
+                            <p>Error details: ${error.message}</p>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        // Load charts when page loads
+        document.addEventListener('DOMContentLoaded', loadCharts);
+    </script>
+</body>
+</html> 
