@@ -9,14 +9,15 @@
 <body>
   {% include 'navbar.html' %}
 
-  <div class="content">
     <h1>Forecast by Country</h1>
+    <div class="content">
     <p>Select a country to view the forecasted arrivals to Malaysia.</p>
     <label for="countrySelect">Choose Country:</label>
     <select id="countrySelect" class="styled-select">
             <option value="">-- Select a country --</option>
     </select>
     <button onclick="fetchForecast()" class="styled-button">Get Prediction</button>
+  
 
     <div id="result"></div>
     <canvas id="countryChart"></canvas>
