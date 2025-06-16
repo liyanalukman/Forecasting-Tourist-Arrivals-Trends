@@ -13,6 +13,7 @@ from plotly.subplots import make_subplots
 import plotly.express as px
 import json
 import logging
+from datetime import datetime
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
@@ -45,8 +46,9 @@ try:
     last_data_date = df['date'].max()
     logger.info(f"Last data date: {last_data_date}")
     
-    # Generate 12 future months from the last data point
-    months = pd.date_range(start=last_data_date + pd.DateOffset(months=1), periods=12, freq='MS').strftime('%b %Y').tolist()
+# Generate 12 future months starting from current month
+    today = pd.to_datetime(datetime.today().strftime('%Y-%m-01'))
+    months = pd.date_range(start=today, periods=12, freq='MS').strftime('%b %Y').tolist()
     logger.info(f"Generated future months: {months}")
     
 except Exception as e:
@@ -131,24 +133,37 @@ def home():
 
 @app.route('/about')
 def about():
-    # Predict next month's total arrivals
-    next_month_forecast = model.forecast(steps=1)
-    predicted_total = int(max(next_month_forecast[0], 0))  # Ensure it's non-negative
+    # Determine today's date and dataset's last date
+    now = datetime.now()
+    last_data_date = df['date'].max().normalize()  # Use your dataset's latest date dynamically
 
-    # Get latest month's state data
+    # Calculate months difference to predict next month
+    next_month = now.month + 1 if now.month < 12 else 1
+    next_year = now.year if now.month < 12 else now.year + 1
+    next_month_date = datetime(next_year, next_month, 1)
+
+    months_diff = (next_month_date.year - last_data_date.year) * 12 + (next_month_date.month - last_data_date.month)
+
+    # Forecast that many months ahead
+    if months_diff > 0:
+        forecast = model.forecast(steps=months_diff)
+        predicted_total = int(max(forecast[-1], 0))
+    else:
+        predicted_total = int(model.predict()[months_diff])
+
+    # Use latest available month in dataset for proportion base
     base_str = last_data_date.strftime('%b %Y')
     state_props = state_proportion_by_month.get(base_str, {})
     state_totals = {state: int(predicted_total * prop) for state, prop in state_props.items()}
-    
-    # Sort by arrivals descending
     sorted_states = sorted(state_totals.items(), key=lambda x: x[1], reverse=True)
 
-    # Send data to template
     return render_template(
         'about.html',
         predicted_total=predicted_total,
-        state_arrivals=sorted_states
+        state_arrivals=sorted_states,
+        forecast_month=next_month_date.strftime('%B %Y')
     )
+
 
 
 @app.route('/predict/monthly')
@@ -244,31 +259,32 @@ def predict_monthly():
         'top_states': top_states
     })
 
+
 @app.route('/predict/state_trend', methods=['POST'])
 def predict_state_trend():
     selected_state = request.get_json().get('state')
     if not selected_state:
         return jsonify({'error': 'No state selected'})
 
-    forecast = model.forecast(steps=12)
+    # Calculate how many months between last data and today
+    now = datetime.now()
+    months_diff = (now.year - last_data_date.year) * 12 + (now.month - last_data_date.month) + 1
+
+    # Forecast next 12 months from today
+    forecast = model.forecast(steps=months_diff + 12)
+    forecast = forecast[months_diff:]  # Skip past months
     forecast = np.maximum(forecast, 0)
 
-        # Get total arrivals for each state
+    # Use average state proportions
     state_totals = df.groupby('soe')['arrivals'].sum()
     total_arrivals = state_totals.sum()
-
     average_state_props = (state_totals / total_arrivals).to_dict()
-
-    # Get selected state proportion
     state_prop = average_state_props.get(selected_state, 0)
 
-    # Forecast future arrivals
-    forecast = model.forecast(steps=12)
-    forecast = np.maximum(forecast, 0)
     state_forecast = [int(total * state_prop) for total in forecast]
 
     return jsonify({
-        'months': months,
+        'months': months[:12],
         'arrivals': state_forecast
     })
 
@@ -277,13 +293,6 @@ def predict_country_trend():
     selected_country = request.get_json().get('country')
     if not selected_country:
         return jsonify({'error': 'No country selected'})
-
-    forecast = model.forecast(steps=12)
-    forecast = np.maximum(forecast, 0)
-
-    country_totals = df.groupby('country')['arrivals'].sum()
-    total_arrivals = country_totals.sum()
-    average_props = (country_totals / total_arrivals).to_dict()
 
     # Match country name to code
     country_code = None
@@ -295,15 +304,33 @@ def predict_country_trend():
     if not country_code:
         return jsonify({'error': 'Country not found'})
 
-    country_prop = average_props.get(country_code, 0)
+    # Compute months between last dataset month and now
+    now = datetime.now()
+    months_diff = (now.year - last_data_date.year) * 12 + (now.month - last_data_date.month) + 1
 
+    # Forecast 12 months from the current month
+    full_forecast = model.forecast(steps=months_diff + 12)
+    forecast = np.maximum(full_forecast[months_diff:], 0)
+
+    # Get average country proportions
+    country_totals = df.groupby('country')['arrivals'].sum()
+    total_arrivals = country_totals.sum()
+    average_props = (country_totals / total_arrivals).to_dict()
+
+    country_prop = average_props.get(country_code, 0)
     country_forecast = [int(total * country_prop) for total in forecast]
 
+    # Generate dynamic labels for the next 12 months
+    forecast_months = pd.date_range(
+        start=now.replace(day=1) + pd.DateOffset(months=1), 
+        periods=12, 
+        freq='MS'
+    ).strftime('%b %Y').tolist()
+
     return jsonify({
-        'months': months,
+        'months': forecast_months,
         'arrivals': country_forecast
     })
-
 # Add new routes for analytics
 @app.route('/analytics')
 def analytics():
