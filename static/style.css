@@ -9,7 +9,7 @@ body {
 }
 
 .content{
-  width: 1000px;
+  max-width: 900px;
   margin: 30px auto;
   padding: 30px;
   background-color: white;
@@ -80,6 +80,7 @@ body {
   padding: 20px;
   color: #003d66;
 }
+
 
 .fade-section {
   opacity: 0;

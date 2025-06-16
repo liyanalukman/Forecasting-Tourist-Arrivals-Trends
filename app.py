@@ -13,6 +13,7 @@ from plotly.subplots import make_subplots
 import plotly.express as px
 import json
 import logging
+from datetime import datetime
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
@@ -45,8 +46,9 @@ try:
     last_data_date = df['date'].max()
     logger.info(f"Last data date: {last_data_date}")
     
-    # Generate 12 future months from the last data point
-    months = pd.date_range(start=last_data_date + pd.DateOffset(months=1), periods=12, freq='MS').strftime('%b %Y').tolist()
+# Generate 12 future months starting from current month
+    today = pd.to_datetime(datetime.today().strftime('%Y-%m-01'))
+    months = pd.date_range(start=today, periods=12, freq='MS').strftime('%b %Y').tolist()
     logger.info(f"Generated future months: {months}")
     
 except Exception as e:
