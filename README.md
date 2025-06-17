@@ -55,7 +55,7 @@ cd Forecasting-Tourist-Arrivals-Trends
 ```bash
 python -m venv env
 env\Scripts\activate //for Windows
-source env/bin/activate // for Linux/macOS
+source env/bin/activate //for Linux/macOS
 ```
 ### 3. Run the Flask Application
 ```bash
